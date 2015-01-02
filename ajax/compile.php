@@ -40,11 +40,16 @@ if(!\OC\Files\Filesystem::isCreatable(stripslashes($dir))) {
 //Generating commands
 $copy_directory_tree_command = "rsync -av -f\"+ */\" -f\"- *\" $workdir/ $outpath";
 $cd_command = "cd " . str_replace(' ','\ ',trim($workdir)) ;
-if($compiler == 'xelatex' || $compiler == 'pdflatex')
+if($compiler == 'xelatex' || $compiler == 'pdflatex'){
     $latex_command .= $compiler . " -output-directory $outpath $file";
-else
+}
+else{
     $latex_command = "latex -output-directory=$outpath  $file ; cd $outpath; dvips  $dvifile ; ps2pdf $psfile";
+}
+$cleanup_command = "rm -rf $outpath";
 
+
+//beginning now with direct work for compilation
 $output = "========BEGIN COMPILE $psfile ======== \n "; // % $latex_command\n";
 
 $return = shell_exec($copy_directory_tree_command . " && " . $cd_command . " && " . $latex_command);
@@ -55,7 +60,6 @@ while (preg_match('/Rerun to get cross-references right/',$log) || preg_match('/
 	$log = file_get_contents($outpath . '/' . $logfile);	
 }
 
-$cleanup = "rm -rf $outpath";
 
 // ! at begining of a line indicate an error!
 $errors = preg_grep("/^!/",explode("\n",$log)) ;
@@ -67,14 +71,14 @@ if ( empty($errors) === false ) {
 		$error .=  $log_array[$i]."\n";
     }
     OCP\JSON::error(array('data' => array('message' => $l->t('Compile failed with errors').' - <br/>', 'output' => nl2br($output . " % " . $latex_command . "\n" . $error ))));
-    shell_exec($cleanup);
+    shell_exec($cleanup_command);
     exit;
 }
 
 // No PDF File !?
 if (!file_exists($outpath . '/' . $pdffile)) {
     OCP\JSON::error(array('data' => array('message' => $l->t('Compile failed with errors').':<br/>', 'output' => nl2br($output . " % ". $latex_command."\n" . file_get_contents($outpath . '/' . $logfile)) )));
-    shell_exec($cleanup);
+    shell_exec($cleanup_command);
     exit;
 };
 
@@ -82,10 +86,12 @@ if (!file_exists($outpath . '/' . $pdffile)) {
 $output .= $return;
 $output .= "\n========END COMPILE==========\n";
 
-if(file_exists($workdir . '/' . $pdffile))
+if(file_exists($workdir . '/' . $pdffile)){
 	\OC\Files\Filesystem::unlink($workdir . '/' . $pdffile);
-if ($compiler === 'latex'  && file_exists($workdir . '/' . $psfile) )
+}
+if ($compiler === 'latex'  && file_exists($workdir . '/' . $psfile) ){
 	\OC\Files\Filesystem::unlink($workdir . '/' . $psfile);
+}
 
 if (!@rename(trim($outpath . '/' . $pdffile), trim($workdir . '/'. $pdffile))) {
     $errors = error_get_last();
@@ -118,4 +124,4 @@ $target = \OC\Files\Filesystem::normalizePath($target);
 $meta =  \OC\Files\Filesystem::getFileInfo($target);
 
 OCP\JSON::success(array('data' => array('output' => nl2br($output), 'path' => $dir, 'pdffile' => $pdffile, 'psfile' => $psfile, 'logfile' => $logfile)));
-shell_exec($cleanup);
+shell_exec($cleanup_command);
