@@ -7,9 +7,10 @@ The standard "Text Editor" must be enabled.
 installation
 =================
 - run 'apt-get install texlive'
+- run 'apt-get install git'
 - change to owncloud app directory 'cd /var/www/owncloud/apps'
-- now run 'git clone https://github.com/domcars0/files_latexeditor.git'
-- open change to your webinterface and open the apps page <your-ip>/owncloud/index.php/settings/apps
+- now run 'git clone https://github.com/domcars0/files_latexeditor.git' 
+- change to your webinterface and open the apps page <your-ip>/owncloud/index.php/settings/apps
 - search for 'LatexTex Editor and Compiler' and activate it
  
 note
