@@ -1,25 +1,25 @@
 <?php
 
-// Check if we are a user
+// Check if we are a user and get userid
 OCP\JSON::checkLoggedIn();
+$userid = OCP\USER::getUser();
 
 // Get translator
 $l = OC_L10N::get('files_latexeditor');
 
 set_time_limit(0); //scanning can take ages
 
-$dir = isset($_POST['path']) ? $_POST['path'] : '';
-
-// Check if we've been given a compiler, otherwise use latex as default
-$compiler = isset($_POST['compiler']) ? $_POST['compiler'] : 'latex';
-// If they've set the compiler to something other than an allowable option....
-if( !($compiler === 'xelatex' || $compiler === 'pdflatex' || $compiler === 'latex')){
-  $compiler = 'latex';
+// Check if compiler is given and valid, otherwise use the default compiler
+if(!isset($_POST['compiler']) || !($_POST['compiler'] === 'xelatex' || $_POST['compiler'] === 'pdflatex' || $_POST['compiler'] === 'latex')){
+	$compiler = 'latex';
 }
-$file = isset($_POST['filename']) ? $_POST['filename'] : '';
+else{
+	$compiler = $_POST['compiler']
+}
 
-$userid = OCP\USER::getUser();
-// The real directory file
+// Getting the file names, dirs etc.
+$dir = isset($_POST['path']) ? $_POST['path'] : '';
+$file = isset($_POST['filename']) ? $_POST['filename'] : '';
 $workdir = dirname(\OC\Files\Filesystem::getLocalFile(stripslashes($dir). $file));
 $info = pathinfo($file);
 $fileext = '.' . $info['extension'];
@@ -29,6 +29,7 @@ $dvifile = $projectname . '.dvi';
 $psfile = $projectname . '.ps';
 $tocfile = $projectname . '.toc';
 $logfile = $projectname . '.log';
+$outpath = "/tmp/latex_" . $userid . "_" . $projectname;
 
 // As we will write pdf/ps file(s) in the $dir, we need to known if it's writable
 if(!\OC\Files\Filesystem::isCreatable(stripslashes($dir))) {
@@ -36,8 +37,7 @@ if(!\OC\Files\Filesystem::isCreatable(stripslashes($dir))) {
     exit();
 }
 
-$outpath = "/tmp/latex_" . $userid . "_" . $projectname;
-
+//Generating commands
 $copy_directory_tree_command = "rsync -av -f\"+ */\" -f\"- *\" $workdir/ $outpath";
 $cd_command = "cd " . str_replace(' ','\ ',trim($workdir)) ;
 if($compiler == 'xelatex' || $compiler == 'pdflatex')
@@ -99,20 +99,23 @@ if (!@rename(trim($outpath . '/' . $pdffile), trim($workdir . '/'. $pdffile))) {
             $errors = error_get_last();
             $output.="\n>>>> " . $l->t("COPY ERROR: ") . $errors['type'];
             $output.="\n>>>> " . "<br />\n" . $errors['message'];
-        } else
-	    $output.=" <strong> Copy " . trim($outpath . '/' . $psfile) . "</strong>";
+        } 
+		else{
+			$output.=" <strong> Copy " . trim($outpath . '/' . $psfile) . "</strong>";
+		}
     }
 }
 
 $output.="\n>>>> " . $l->t("COPY DONE: ") . "\n";
-$target = OCP\Files::buildNotExistingFileName(stripslashes($workdir), $pdffile);
+
+if ( $compiler === 'latex' ) {
+	$target = OCP\Files::buildNotExistingFileName(stripslashes($workdir), $psfile);
+} 
+else{
+	$target = OCP\Files::buildNotExistingFileName(stripslashes($workdir), $pdffile);
+}
 $target = \OC\Files\Filesystem::normalizePath($target);
 $meta =  \OC\Files\Filesystem::getFileInfo($target);
-if ( $compiler === 'latex' ) {
-    $target = OCP\Files::buildNotExistingFileName(stripslashes($workdir), $psfile);
-    $target = \OC\Files\Filesystem::normalizePath($target);
-    $meta =  \OC\Files\Filesystem::getFileInfo($target);
-} 
 
 OCP\JSON::success(array('data' => array('output' => nl2br($output), 'path' => $dir, 'pdffile' => $pdffile, 'psfile' => $psfile, 'logfile' => $logfile)));
 shell_exec($cleanup);
