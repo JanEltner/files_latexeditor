@@ -41,7 +41,7 @@ if(!\OC\Files\Filesystem::isCreatable(stripslashes($dir))) {
 $copy_directory_tree_command = "rsync -av -f\"+ */\" -f\"- *\" $workdir/ $outpath";
 $cd_command = "cd " . str_replace(' ','\ ',trim($workdir)) ;
 if($compiler == 'xelatex' || $compiler == 'pdflatex'){
-    $latex_command .= $compiler . " -output-directory $outpath $file";
+    $latex_command = $compiler . " -output-directory $outpath $file";
 }
 else{
     $latex_command = "latex -output-directory=$outpath  $file ; cd $outpath; dvips  $dvifile ; ps2pdf $psfile";
@@ -67,8 +67,9 @@ if ( empty($errors) === false ) {
     $log_array = explode("\n",$log);
     $error = "\n";
     foreach ( $errors as $line => $msg ) {
-	for ( $i = $line ; $i <= $line + 5 ; $i++)
-		$error .=  $log_array[$i]."\n";
+		for ( $i = $line ; $i <= $line + 5 ; $i++){
+			$error .=  $log_array[$i]."\n";
+		}
     }
     OCP\JSON::error(array('data' => array('message' => $l->t('Compile failed with errors').' - <br/>', 'output' => nl2br($output . " % " . $latex_command . "\n" . $error ))));
     shell_exec($cleanup_command);
