@@ -106,7 +106,7 @@ if (!@rename(trim($outpath . '/' . $pdffile), trim($workdir . '/'. $pdffile))) {
             $errors = error_get_last();
             $output.="\n>>>> " . $l->t("COPY ERROR: ") . $errors['type'];
             $output.="\n>>>> " . "<br />\n" . $errors['message'];
-        } 
+        }
 		else{
 			$output.=" <strong> Copy " . trim($outpath . '/' . $psfile) . "</strong>";
 		}
