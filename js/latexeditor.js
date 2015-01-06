@@ -5,19 +5,21 @@ $(document).ready(function () {
 			// Editor exists
 			// But control bar is finished only when the editor is filled
         		$("#content #editor").bind('DOMNodeInserted', function(event2){
-            			if(files_latexeditor_js_done || !$("#editor_save").length ){
-                			return;
-						}
-				if(isLatex($('#content #controls .last a').html())) {
-					var latexbutton = '<button id="editor_compile">'+t('files_latexeditor','LaTex')+'</button><div class="separator"></div>';
-					$('#editor_save').after(latexbutton);
-					$('#content').on('click', '#editor_compile', doCompile);
-					files_latexeditor_js_done = true;
-				} else
-					files_latexeditor_js_done = false;
+            		if(files_latexeditor_js_done || !$("#editor_save").length ){
+                		return;
+					}
+					if(isLatex($('#content #controls .last a').html())) {
+						var latexbutton = '<button id="editor_compile">'+t('files_latexeditor','LaTex')+'</button><div class="separator"></div>';
+						$('#editor_save').after(latexbutton);
+						$('#content').on('click', '#editor_compile', doCompile);
+						files_latexeditor_js_done = true;
+					} else{
+						files_latexeditor_js_done = false;
+					}
         		});
-    		} else 
-			files_latexeditor_js_done = false;
+    		} else {
+				files_latexeditor_js_done = false;
+			}
 	});
 });
 
@@ -41,20 +43,12 @@ function AjaxCompile(ajaxpath, path,filename,pdflatex){
           doFileSave();
         },
         success: function(jsondata) {
-            if(jsondata.status!='success'){
-                $(":button:contains('ViewPdf')").button('disable');
-
-            } else {
-                // Compile OK
-                // Update titles                                                    
-                $(":button:contains('ViewPdf')").button('enable');
-            }
+            $(":button:contains('ViewPdf')").button((jsondata.status!='success')?'disable':'enable');
             return jsondata;
         }
     }).responseText;
 
     response=jQuery.parseJSON(response);
-
     return response;
 }
 
@@ -94,14 +88,12 @@ function compileFile(filename,path){
                     }
                     $('#latexresult').append(json.data.output);
                 }
-
             },
 			ViewPdf: function(){
                 var pdfviewerpath = OC.linkTo('files_pdfviewer', 'viewer.php')+'?dir='+encodeURIComponent(json.data.path).replace(/%2F/g, '/')+'&file='+encodeURIComponent(json.data.pdffile);
                 
                 frame='<iframe id="latexresultpdf"  style="width:100%;height:100%;display:block;"></iframe>';
                 $('#latexresult').html(frame).promise().done(function(){
-
                     $('#latexresultpdf').attr('src',pdfviewerpath);
                 });
             },
@@ -114,7 +106,6 @@ function compileFile(filename,path){
         }
     })
 
-
     x=$('#editor').position().left+$('#editor').width()*0.45;
     y=$('#editor').position().top+10;
     compileDlg.dialog({
@@ -122,22 +113,17 @@ function compileFile(filename,path){
         height:$('#editor').height()*0.85,
         position: [x, y]
     });
-
     $(":button:contains('ViewPdf')").button('disable');
 }
 
 //Tries to compile The file
 function doCompile(){
     if(editorIsShown()){
-
-        var filename = $('#editor').attr('data-filename');
-        var dir=$('#editor').attr('data-dir')+'/';
-        compileFile(filename, dir);
+        compileFile($('#editor').attr('data-filename'), $('#editor').attr('data-dir')+'/');
     }
 }
 
-function DestroyIfExist(idname)
-{
+function DestroyIfExist(idname){
     if(document.getElementById(idname)) {
         $("#"+idname).remove();
     }
